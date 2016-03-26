@@ -83,6 +83,10 @@ class SimpleHtmlDom implements \IteratorAggregate
 
         $newDocument = new HtmlDomParser($string);
 
+        if ($newDocument->outertext != $string) {
+            throw new RuntimeException("Not valid HTML fragment");
+        }
+
         $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
 
         $this->node->parentNode->replaceChild($newNode, $this->node);
@@ -102,6 +106,17 @@ class SimpleHtmlDom implements \IteratorAggregate
     {
         if (!empty($string)) {
             $newDocument = new HtmlDomParser($string);
+
+            if ($newDocument->outertext != $string) {
+
+                // DEBUG
+                //echo $newDocument->outertext;
+                //echo "\n";
+                //echo $string;
+                //echo "\n\n";
+
+                throw new RuntimeException("Not valid HTML fragment");
+            }
         }
 
         foreach ($this->node->childNodes as $node) {

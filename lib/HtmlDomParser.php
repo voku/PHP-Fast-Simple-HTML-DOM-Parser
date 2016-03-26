@@ -97,7 +97,7 @@ class HtmlDomParser
     {
         // DOMDocument settings
         $this->document->preserveWhiteSpace = true;
-        $this->document->recover = true;
+        $this->document->recover = false;
         $this->document->formatOutput = false;
 
         // set error level
@@ -106,7 +106,7 @@ class HtmlDomParser
 
         $sxe = simplexml_load_string($html);
         if (libxml_get_errors()) {
-            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
+            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         } else {
             $this->document = dom_import_simplexml($sxe)->ownerDocument;
         }
@@ -228,7 +228,9 @@ class HtmlDomParser
             call_user_func_array($this::$callback, array($this));
         }
 
-        return trim($this->document->saveHTML($this->document->documentElement));
+        $content = $this->document->saveHTML($this->document->documentElement);
+
+        return trim($content);
     }
 
     /**
@@ -239,8 +241,14 @@ class HtmlDomParser
     public function innerHtml()
     {
         $text = '';
+
         foreach ($this->document->documentElement->childNodes as $node) {
-            $text .= trim($this->document->saveXML($node));
+            $textTmp = trim($this->document->saveXML($node));
+
+            // DEBUG
+            //echo $textTmp . "\n";
+
+            $text .= $textTmp;
         }
 
         return $text;

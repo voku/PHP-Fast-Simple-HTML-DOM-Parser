@@ -255,7 +255,7 @@ test3Html.html                      <foo id="foo">bar</foo>
 HTML;
 
     $htmlTmp = HtmlDomParser::str_get_html($str);
-    self::assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDom', $htmlTmp);
+    self::assertInstanceOf('FastSimpleHTMLDom\HtmlDomParser', $htmlTmp);
 
     // replace all images with "foobar"
     $tmpArray = array();
