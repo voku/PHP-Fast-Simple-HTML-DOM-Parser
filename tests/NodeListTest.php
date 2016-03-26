@@ -1,28 +1,34 @@
 <?php
 
-namespace Tests\FastSimpleHTMLDom;
+use FastSimpleHTMLDom\HtmlDomParser;
 
-
-use FastSimpleHTMLDom\Document;
-use Tests\TestCase;
-
-class NodeListTest extends TestCase
+class NodeListTest extends PHPUnit_Framework_TestCase
 {
+    protected function loadFixture($filename)
+    {
+        $path = __DIR__ . '/fixtures/' . $filename;
+        if (file_exists($path)) {
+            return file_get_contents($path);
+        }
+
+        return null;
+    }
+
     /**
      * @dataProvider findTests
      */
     public function testFind($html, $selector, $count)
     {
-        $document = new Document($html);
+        $document = new HtmlDomParser($html);
         $nodeList =$document->find('section');
 
         $elements = $nodeList->find($selector);
 
-        $this->assertInstanceOf('FastSimpleHTMLDom\NodeList', $elements);
+        $this->assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDomNode', $elements);
         $this->assertEquals($count, count($elements));
 
         foreach ($elements as $node) {
-            $this->assertInstanceOf('FastSimpleHTMLDom\Element', $node);
+            $this->assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDom', $node);
         }
     }
 
@@ -47,7 +53,7 @@ class NodeListTest extends TestCase
     public function testInnerHtml()
     {
         $html = '<div><p>foo</p><p>bar</p></div>';
-        $document = new Document($html);
+        $document = new HtmlDomParser($html);
         $element = $document->find('p');
 
         $this->assertEquals('<p>foo</p><p>bar</p>', $element->innerHtml());
@@ -57,7 +63,7 @@ class NodeListTest extends TestCase
     public function testText()
     {
         $html = '<div><p>foo</p><p>bar</p></div>';
-        $document = new Document($html);
+        $document = new HtmlDomParser($html);
         $element = $document->find('p');
 
         $this->assertEquals('foobar', $element->text());

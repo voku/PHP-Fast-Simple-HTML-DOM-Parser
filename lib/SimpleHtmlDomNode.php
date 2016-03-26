@@ -4,12 +4,12 @@ namespace FastSimpleHTMLDom;
 
 
 /**
- * Class NodeList
+ * Class SimpleHtmlDomNode
  * @package FastSimpleHTMLDom
  * @property-read string outertext Get dom node's outer html
  * @property-read string plaintext Get dom node's plain text
  */
-class NodeList extends \ArrayObject
+class SimpleHtmlDomNode extends \ArrayObject
 {
     /**
      * Find list of nodes with a CSS selector
@@ -17,11 +17,11 @@ class NodeList extends \ArrayObject
      * @param string $selector
      * @param int    $idx
      *
-     * @return NodeList|Element|null
+     * @return SimpleHtmlDomNode|SimpleHtmlDom|null
      */
     public function find($selector, $idx = null)
     {
-        $elements = new NodeList();
+        $elements = new SimpleHtmlDomNode();
         foreach ($this as $node) {
             foreach ($node->find($selector) as $res) {
                 $elements->append($res);
@@ -97,7 +97,7 @@ class NodeList extends \ArrayObject
      * @param string $selector
      * @param int    $idx
      *
-     * @return Element|NodeList|null
+     * @return SimpleHtmlDom|SimpleHtmlDomNode|null
      */
     public function __invoke($selector, $idx = null)
     {

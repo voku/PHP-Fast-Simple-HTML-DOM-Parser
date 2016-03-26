@@ -10,8 +10,9 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Class Document
- * @package FastSimpleHTMLDom
+ * Class HtmlDomParser
+ * 
+*@package FastSimpleHTMLDom
  *
  * @property string      outertext Get dom node's outer html
  * @property string      innertext Get dom node's inner html
@@ -19,13 +20,13 @@ use RuntimeException;
  *
  * @method string outertext() Get dom node's outer html
  * @method string innertext() Get dom node's inner html
- * @method Document load() load($html) Load HTML from string
- * @method Document load_file() load_file($html) Load HTML from file
+ * @method HtmlDomParser load() load($html) Load HTML from string
+ * @method HtmlDomParser load_file() load_file($html) Load HTML from file
  *
- * @method static Document file_get_html() file_get_html($html) Load HTML from file
- * @method static Document str_get_html() str_get_html($html) Load HTML from string
+ * @method static HtmlDomParser file_get_html() file_get_html($html) Load HTML from file
+ * @method static HtmlDomParser str_get_html() str_get_html($html) Load HTML from string
  */
-class Document
+class HtmlDomParser
 {
     /**
      * @var DOMDocument
@@ -33,31 +34,35 @@ class Document
     protected $document;
 
     /**
+     * @var string
+     */
+    protected $encoding = 'UTF-8';
+
+    /**
      * @var array
      */
-    protected $functionAliases = [
+    protected $functionAliases = array(
         'outertext' => 'html',
         'innertext' => 'innerHtml',
         'load'      => 'loadHtml',
         'load_file' => 'loadHtmlFile',
-    ];
+    );
 
     /**
      * @var Callable
      */
     static protected $callback;
 
-
     /**
      * Constructor
      *
-     * @param string|Element $element HTML code or Element
+     * @param string|SimpleHtmlDom $element HTML code or SimpleHtmlDom
      */
     public function __construct($element = null)
     {
-        $this->document = new DOMDocument('1.0', 'UTF-8');
+        $this->document = new DOMDocument('1.0', $this->getEncoding());
 
-        if ($element instanceof Element) {
+        if ($element instanceof SimpleHtmlDom) {
             $element = $element->getNode();
 
             $domNode = $this->document->importNode($element, true);
@@ -72,11 +77,58 @@ class Document
     }
 
     /**
+     * Get the encoding to use
+     *
+     * @return string
+     */
+    private function getEncoding()
+    {
+        return $this->encoding;
+    }
+
+    /**
+     * create DOMDocument from HTML
+     *
+     * @param string $html
+     *
+     * @return \DOMDocument
+     */
+    private function createDOMDocument($html)
+    {
+        // DOMDocument settings
+        $this->document->preserveWhiteSpace = true;
+        $this->document->recover = true;
+        $this->document->formatOutput = false;
+
+        // set error level
+        $internalErrors = libxml_use_internal_errors(true);
+        $disableEntityLoader = libxml_disable_entity_loader(true);
+
+        $sxe = simplexml_load_string($html);
+        if (libxml_get_errors()) {
+            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
+        } else {
+            $this->document = dom_import_simplexml($sxe)->ownerDocument;
+        }
+        libxml_clear_errors();
+
+        // set encoding
+        $this->document->encoding = $this->getEncoding();
+
+        // restore lib-xml settings
+        libxml_use_internal_errors($internalErrors);
+        libxml_disable_entity_loader($disableEntityLoader);
+
+        return $this->document;
+    }
+
+    /**
      * Load HTML from string
      *
      * @param string $html
      *
-     * @return Document
+     * @return HtmlDomParser
+     *
      * @throws InvalidArgumentException if argument is not string
      */
     public function loadHtml($html)
@@ -85,19 +137,7 @@ class Document
             throw new InvalidArgumentException(__METHOD__ . ' expects parameter 1 to be string.');
         }
 
-        libxml_use_internal_errors(true);
-        libxml_disable_entity_loader(true);
-
-        $sxe = simplexml_load_string($html);
-        if (libxml_get_errors()) {
-            $this->document->loadHTML('<?xml encoding="UTF-8">' . $html);
-        } else {
-            $this->document = dom_import_simplexml($sxe)->ownerDocument;
-        }
-
-        libxml_clear_errors();
-        libxml_disable_entity_loader(false);
-        libxml_use_internal_errors(false);
+        $this->document = $this->createDOMDocument($html);
 
         return $this;
     }
@@ -107,7 +147,7 @@ class Document
      *
      * @param string $filePath
      *
-     * @return Document
+     * @return HtmlDomParser
      */
     public function loadHtmlFile($filePath)
     {
@@ -148,7 +188,7 @@ class Document
      * @param string $selector
      * @param int    $idx
      *
-     * @return NodeList|Element|null
+     * @return SimpleHtmlDomNode|SimpleHtmlDom[]
      */
     public function find($selector, $idx = null)
     {
@@ -156,10 +196,10 @@ class Document
 
         $xPath = new DOMXPath($this->document);
         $nodesList = $xPath->query($xPathQuery);
-        $elements = new NodeList();
+        $elements = new SimpleHtmlDomNode();
 
         foreach ($nodesList as $node) {
-            $elements[] = new Element($node);
+            $elements[] = new SimpleHtmlDom($node);
         }
 
         if (is_null($idx)) {
@@ -170,7 +210,11 @@ class Document
             }
         }
 
-        return (isset($elements[$idx])) ? $elements[$idx] : null;
+        if (isset($elements[$idx])) {
+            return $elements[$idx];
+        } else {
+            return new SimpleHtmlDomNodeBlank();
+        }
     }
 
     /**
@@ -181,7 +225,7 @@ class Document
     public function html()
     {
         if ($this::$callback !== null) {
-            call_user_func_array($this::$callback, [$this]);
+            call_user_func_array($this::$callback, array($this));
         }
 
         return trim($this->document->saveHTML($this->document->documentElement));
@@ -272,7 +316,7 @@ class Document
      * @param string $selector
      * @param int    $idx
      *
-     * @return Element|NodeList|null
+     * @return SimpleHtmlDom|SimpleHtmlDomNode|null
      */
     public function __invoke($selector, $idx = null)
     {
@@ -288,7 +332,7 @@ class Document
     public function __call($name, $arguments)
     {
         if (isset($this->functionAliases[$name])) {
-            return call_user_func_array([$this, $this->functionAliases[$name]], $arguments);
+            return call_user_func_array(array($this, $this->functionAliases[$name]), $arguments);
         }
         throw new BadMethodCallException('Method does not exist');
     }
@@ -297,21 +341,22 @@ class Document
      * @param $name
      * @param $arguments
      *
-     * @return bool|Document
+     * @return HtmlDomParser
      */
     public static function __callStatic($name, $arguments)
     {
         if ($name == 'str_get_html') {
-            $document = new Document();
+            $parser = new HtmlDomParser();
 
-            return $document->loadHtml($arguments[0]);
+            return $parser->loadHtml($arguments[0]);
         }
 
         if ($name == 'file_get_html') {
-            $document = new Document();
+            $parser = new HtmlDomParser();
 
-            return $document->loadHtmlFile($arguments[0]);
+            return $parser->loadHtmlFile($arguments[0]);
         }
+
         throw new BadMethodCallException('Method does not exist');
     }
 }

@@ -2,12 +2,17 @@
 
 namespace FastSimpleHTMLDom;
 
-
 use Symfony\Component\CssSelector\CssSelectorConverter;
+
 class SelectorConverter
 {
-    protected static $compiled = [];
+    protected static $compiled = array();
 
+  /**
+   * @param $selector
+   *
+   * @return mixed|string
+   */
     public static function toXPath($selector)
     {
         if (isset(self::$compiled[$selector])){
