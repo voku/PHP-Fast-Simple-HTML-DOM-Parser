@@ -2,8 +2,16 @@
 
 use FastSimpleHTMLDom\HtmlDomParser;
 
+/**
+ * Class NodeListTest
+ */
 class NodeListTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @param $filename
+     *
+     * @return null|string
+     */
     protected function loadFixture($filename)
     {
         $path = __DIR__ . '/fixtures/' . $filename;
@@ -16,6 +24,10 @@ class NodeListTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider findTests
+     *
+     * @param $html
+     * @param $selector
+     * @param $count
      */
     public function testFind($html, $selector, $count)
     {
@@ -24,14 +36,17 @@ class NodeListTest extends PHPUnit_Framework_TestCase
 
         $elements = $nodeList->find($selector);
 
-        $this->assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDomNode', $elements);
-        $this->assertEquals($count, count($elements));
+        self::assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDomNode', $elements);
+        self::assertEquals($count, count($elements));
 
         foreach ($elements as $node) {
-            $this->assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDom', $node);
+            self::assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDom', $node);
         }
     }
 
+    /**
+     * @return array
+     */
     public function findTests()
     {
         $html = $this->loadFixture('testpage.html');
@@ -46,7 +61,7 @@ class NodeListTest extends PHPUnit_Framework_TestCase
             array($html, 'input[id=in]', 1),
             array($html, '#in', 1),
             array($html, '*[id]', 51),
-            array($html, 'text', 390),
+            array($html, 'text', 539),
         );
     }
 
@@ -56,8 +71,8 @@ class NodeListTest extends PHPUnit_Framework_TestCase
         $document = new HtmlDomParser($html);
         $element = $document->find('p');
 
-        $this->assertEquals('<p>foo</p><p>bar</p>', $element->innerHtml());
-        $this->assertEquals('<p>foo</p><p>bar</p>', $element->innertext);
+        self::assertEquals('<p>foo</p><p>bar</p>', $element->innerHtml());
+        self::assertEquals('<p>foo</p><p>bar</p>', $element->innertext);
     }
 
     public function testText()
@@ -66,7 +81,7 @@ class NodeListTest extends PHPUnit_Framework_TestCase
         $document = new HtmlDomParser($html);
         $element = $document->find('p');
 
-        $this->assertEquals('foobar', $element->text());
-        $this->assertEquals('foobar', $element->plaintext);
+        self::assertEquals('foobar', $element->text());
+        self::assertEquals('foobar', $element->plaintext);
     }
 }

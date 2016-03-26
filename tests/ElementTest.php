@@ -81,7 +81,7 @@ class ElementTest extends PHPUnit_Framework_TestCase
         $node = $document->getDocument()->documentElement;
         $element = new SimpleHtmlDom($node);
 
-        self::assertInstanceOf('FastSimpleHTMLDom\HtmlDomParser', $element->getDom());
+        self::assertInstanceOf('FastSimpleHTMLDom\HtmlDomParser', $element->getHtmlDomParser());
     }
 
     /**
@@ -120,7 +120,7 @@ class ElementTest extends PHPUnit_Framework_TestCase
             array($html, 'input[id=in]', 1),
             array($html, '#in', 1),
             array($html, '*[id]', 52),
-            array($html, 'text', 462),
+            array($html, 'text', 640),
             array($html, 'comment', 3),
         );
     }
@@ -312,6 +312,7 @@ class ElementTest extends PHPUnit_Framework_TestCase
 
         self::assertInstanceOf('FastSimpleHTMLDom\SimpleHtmlDom', $node);
         self::assertEquals('div', $node->tag);
+        /** @noinspection PhpUndefinedFieldInspection */
         self::assertEquals('div', $element->parent()->tag);
     }
 

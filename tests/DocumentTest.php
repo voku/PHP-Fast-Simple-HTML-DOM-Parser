@@ -83,6 +83,7 @@ class DocumentTest extends PHPUnit_Framework_TestCase
     public function testMethodNotExist()
     {
         $document = new HtmlDomParser();
+        /** @noinspection PhpUndefinedMethodInspection */
         $document->bar();
     }
 
@@ -174,18 +175,18 @@ class DocumentTest extends PHPUnit_Framework_TestCase
         $html = $this->loadFixture('testpage.html');
 
         return array(
-            [$html, '.fake h2', 0],
-            [$html, 'article', 16],
-            [$html, '.radio', 3],
-            [$html, 'input.radio', 3],
-            [$html, 'ul li', 35],
-            [$html, 'fieldset#forms__checkbox li, fieldset#forms__radio li', 6],
-            [$html, 'input[id]', 23],
-            [$html, 'input[id=in]', 1],
-            [$html, '#in', 1],
-            [$html, '*[id]', 52],
-            [$html, 'text', 462],
-            [$html, 'comment', 3],
+            array($html, '.fake h2', 0),
+            array($html, 'article', 16),
+            array($html, '.radio', 3),
+            array($html, 'input.radio', 3),
+            array($html, 'ul li', 35),
+            array($html, 'fieldset#forms__checkbox li, fieldset#forms__radio li', 6),
+            array($html, 'input[id]', 23),
+            array($html, 'input[id=in]', 1),
+            array($html, '#in', 1),
+            array($html, '*[id]', 52),
+            array($html, 'text', 640),
+            array($html, 'comment', 3),
         );
     }
 

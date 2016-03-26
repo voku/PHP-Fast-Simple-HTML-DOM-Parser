@@ -11,7 +11,7 @@ use RuntimeException;
 
 /**
  * Class HtmlDomParser
- * 
+ *
 *@package FastSimpleHTMLDom
  *
  * @property string      outertext Get dom node's outer html
@@ -39,9 +39,14 @@ class HtmlDomParser
     protected $encoding = 'UTF-8';
 
     /**
+     * @var bool
+     */
+    protected $createdDOMDocumentFromPainText = false;
+
+    /**
      * @var array
      */
-    protected $functionAliases = array(
+    protected static $functionAliases = array(
         'outertext' => 'html',
         'innertext' => 'innerHtml',
         'load'      => 'loadHtml',
@@ -100,13 +105,25 @@ class HtmlDomParser
         $this->document->recover = false;
         $this->document->formatOutput = false;
 
+        if (strpos('<', $html) === false) {
+            $this->createdDOMDocumentFromPainText = true;
+        }
+
         // set error level
         $internalErrors = libxml_use_internal_errors(true);
         $disableEntityLoader = libxml_disable_entity_loader(true);
 
         $sxe = simplexml_load_string($html);
         if (libxml_get_errors()) {
-            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
+
+            // remove the "xml-encoding" hack
+            foreach ($this->document->childNodes as $child) {
+              if ($child->nodeType == XML_PI_NODE) {
+                $this->document->removeChild($child);
+              }
+            }
+
         } else {
             $this->document = dom_import_simplexml($sxe)->ownerDocument;
         }
@@ -188,7 +205,7 @@ class HtmlDomParser
      * @param string $selector
      * @param int    $idx
      *
-     * @return SimpleHtmlDomNode|SimpleHtmlDom[]
+     * @return SimpleHtmlDom|SimpleHtmlDom[]
      */
     public function find($selector, $idx = null)
     {
@@ -202,7 +219,7 @@ class HtmlDomParser
             $elements[] = new SimpleHtmlDom($node);
         }
 
-        if (is_null($idx)) {
+        if (null === $idx) {
             return $elements;
         } else {
             if ($idx < 0) {
@@ -230,7 +247,35 @@ class HtmlDomParser
 
         $content = $this->document->saveHTML($this->document->documentElement);
 
-        return trim($content);
+        return $this->fixHtmlOutput($content);
+    }
+
+  /**
+   * @param $content
+   *
+   * @return mixed
+   */
+    protected function fixHtmlOutput($content)
+    {
+      // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
+      //          so we try to remove it here again ...
+      if ($this->createdDOMDocumentFromPainText === true) {
+        $content = str_replace(
+            array('<p>', '</p>'),
+            '',
+            $content
+        );
+      }
+
+      $content = trim($content);
+
+      $content = preg_replace(
+          array( '!^<html><body>!si', '!</body></html>$!si' ),
+          '',
+          $content
+      );
+
+      return trim($content);
     }
 
     /**
@@ -243,12 +288,7 @@ class HtmlDomParser
         $text = '';
 
         foreach ($this->document->documentElement->childNodes as $node) {
-            $textTmp = trim($this->document->saveXML($node));
-
-            // DEBUG
-            //echo $textTmp . "\n";
-
-            $text .= $textTmp;
+            $text .= $this->fixHtmlOutput($this->document->saveHTML($node));
         }
 
         return $text;
@@ -339,10 +379,10 @@ class HtmlDomParser
      */
     public function __call($name, $arguments)
     {
-        if (isset($this->functionAliases[$name])) {
-            return call_user_func_array(array($this, $this->functionAliases[$name]), $arguments);
+        if (isset(self::$functionAliases[$name])) {
+            return call_user_func_array(array($this, self::$functionAliases[$name]), $arguments);
         }
-        throw new BadMethodCallException('Method does not exist');
+        throw new BadMethodCallException('Method does not exist: ' . $name);
     }
 
     /**

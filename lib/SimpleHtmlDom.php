@@ -2,7 +2,6 @@
 
 namespace FastSimpleHTMLDom;
 
-
 use BadMethodCallException;
 use DOMElement;
 use DOMNode;
@@ -134,7 +133,7 @@ class SimpleHtmlDom implements \IteratorAggregate
     /**
      * @return HtmlDomParser
      */
-    public function getDom()
+    public function getHtmlDomParser()
     {
         return new HtmlDomParser($this);
     }
@@ -149,7 +148,7 @@ class SimpleHtmlDom implements \IteratorAggregate
      */
     public function find($selector, $idx = null)
     {
-        return $this->getDom()->find($selector, $idx);
+        return $this->getHtmlDomParser()->find($selector, $idx);
     }
 
     /**
@@ -305,7 +304,7 @@ class SimpleHtmlDom implements \IteratorAggregate
      */
     public function html()
     {
-        return $this->getDom()->html();
+        return $this->getHtmlDomParser()->html();
     }
 
     /**
@@ -315,7 +314,7 @@ class SimpleHtmlDom implements \IteratorAggregate
      */
     public function innerHtml()
     {
-        return $this->getDom()->innerHtml();
+        return $this->getHtmlDomParser()->innerHtml();
     }
 
     /**
