@@ -62,12 +62,12 @@ HTML;
     $html->find('div', 1)->class = 'bar';
     $html->find('div[id=hello]', 0)->innertext = 'foo';
 
-    self::assertEquals('<div id="hello">foo</div><div id="world" class="bar">World</div>', (string)$html);
+    self::assertEquals('<div id="hello">foo</div>' . "\n" . '<div id="world" class="bar">World</div>', (string)$html);
   }
 
   public function testMail2()
   {
-    $filename = __DIR__ . '/test_mail.html';
+    $filename = __DIR__ . '/fixtures/test_mail.html';
     $html = HtmlDomParser::file_get_html($filename);
     $htmlNormalised = str_replace(array("\r", "\n"), ' ', file_get_contents($filename));
 

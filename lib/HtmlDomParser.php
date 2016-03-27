@@ -2,7 +2,6 @@
 
 namespace FastSimpleHTMLDom;
 
-
 use BadMethodCallException;
 use DOMDocument;
 use DOMXPath;
@@ -105,7 +104,7 @@ class HtmlDomParser
         $this->document->recover = false;
         $this->document->formatOutput = false;
 
-        if (strpos('<', $html) === false) {
+        if (strpos($html, '<') === false) {
             $this->createdDOMDocumentFromPainText = true;
         }
 
@@ -114,20 +113,20 @@ class HtmlDomParser
         $disableEntityLoader = libxml_disable_entity_loader(true);
 
         $sxe = simplexml_load_string($html);
-        if (libxml_get_errors()) {
+        if (count(libxml_get_errors()) === 0) {
+            $this->document = dom_import_simplexml($sxe)->ownerDocument;
+        } else {
             $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
 
             // remove the "xml-encoding" hack
             foreach ($this->document->childNodes as $child) {
-              if ($child->nodeType == XML_PI_NODE) {
-                $this->document->removeChild($child);
-              }
+                  if ($child->nodeType == XML_PI_NODE) {
+                        $this->document->removeChild($child);
+                  }
             }
 
-        } else {
-            $this->document = dom_import_simplexml($sxe)->ownerDocument;
+            libxml_clear_errors();
         }
-        libxml_clear_errors();
 
         // set encoding
         $this->document->encoding = $this->getEncoding();
@@ -257,25 +256,17 @@ class HtmlDomParser
    */
     protected function fixHtmlOutput($content)
     {
-      // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
-      //          so we try to remove it here again ...
-      if ($this->createdDOMDocumentFromPainText === true) {
-        $content = str_replace(
-            array('<p>', '</p>'),
-            '',
-            $content
-        );
-      }
+        // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
+        //          so we try to remove it here again ...
+        if ($this->createdDOMDocumentFromPainText === true) {
+            $content = str_replace(
+                array('<p>', '</p>', '<body>', '</body>', '<html>', '</html>'),
+                '',
+                $content
+            );
+        }
 
-      $content = trim($content);
-
-      $content = preg_replace(
-          array( '!^<html><body>!si', '!</body></html>$!si' ),
-          '',
-          $content
-      );
-
-      return trim($content);
+        return urldecode(trim($content));
     }
 
     /**
