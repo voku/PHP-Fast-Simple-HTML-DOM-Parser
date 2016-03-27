@@ -86,6 +86,28 @@ class SimpleHtmlDom implements \IteratorAggregate
             throw new RuntimeException("Not valid HTML fragment");
         }
 
+        if ($newDocument->getIsDOMDocumentCreatedWithoutHtml() === true) {
+
+            // Remove doc-type node.
+            $newDocument->getDocument()->doctype->parentNode->removeChild($newDocument->getDocument()->doctype);
+
+            // Remove html element, preserving child nodes.
+            $html = $newDocument->getDocument()->getElementsByTagName('html')->item(0);
+            $fragment = $newDocument->getDocument()->createDocumentFragment();
+            while ($html->childNodes->length > 0) {
+                $fragment->appendChild($html->childNodes->item(0));
+            }
+            $html->parentNode->replaceChild($fragment, $html);
+
+            // Remove body element, preserving child nodes.
+            $body = $newDocument->getDocument()->getElementsByTagName('body')->item(0);
+            $fragment = $newDocument->getDocument()->createDocumentFragment();
+            while ($body->childNodes->length > 0) {
+                $fragment->appendChild($body->childNodes->item(0));
+            }
+            $body->parentNode->replaceChild($fragment, $body);
+        }
+
         $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
 
         $this->node->parentNode->replaceChild($newNode, $this->node);
@@ -123,8 +145,32 @@ class SimpleHtmlDom implements \IteratorAggregate
         }
 
         if (!empty($newDocument)) {
+
+            if ($newDocument->getIsDOMDocumentCreatedWithoutHtml() === true) {
+
+                // Remove doc-type node.
+                $newDocument->getDocument()->doctype->parentNode->removeChild($newDocument->getDocument()->doctype);
+
+                // Remove html element, preserving child nodes.
+                $html = $newDocument->getDocument()->getElementsByTagName('html')->item(0);
+                $fragment = $newDocument->getDocument()->createDocumentFragment();
+                while ($html->childNodes->length > 0) {
+                    $fragment->appendChild($html->childNodes->item(0));
+                }
+                $html->parentNode->replaceChild($fragment, $html);
+
+                // Remove body element, preserving child nodes.
+                $body = $newDocument->getDocument()->getElementsByTagName('body')->item(0);
+                $fragment = $newDocument->getDocument()->createDocumentFragment();
+                while ($body->childNodes->length > 0) {
+                    $fragment->appendChild($body->childNodes->item(0));
+                }
+                $body->parentNode->replaceChild($fragment, $body);
+            }
+
             $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
-            $this->node->appendChild($newNode);
+
+          $this->node->appendChild($newNode);
         }
 
         return $this;

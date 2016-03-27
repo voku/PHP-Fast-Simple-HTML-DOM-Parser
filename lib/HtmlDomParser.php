@@ -40,7 +40,12 @@ class HtmlDomParser
     /**
      * @var bool
      */
-    protected $createdDOMDocumentFromPainText = false;
+    protected $isDOMDocumentCreatedWithoutHtml = false;
+
+    /**
+     * @var bool
+     */
+    protected $isDOMDocumentCreatedWithoutHtmlWrapper = false;
 
     /**
      * @var array
@@ -81,6 +86,22 @@ class HtmlDomParser
     }
 
     /**
+     * @return bool
+     */
+    public function getIsDOMDocumentCreatedWithoutHtmlWrapper()
+    {
+        return $this->isDOMDocumentCreatedWithoutHtmlWrapper;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsDOMDocumentCreatedWithoutHtml()
+    {
+        return $this->isDOMDocumentCreatedWithoutHtml;
+    }
+
+    /**
      * Get the encoding to use
      *
      * @return string
@@ -105,7 +126,11 @@ class HtmlDomParser
         $this->document->formatOutput = false;
 
         if (strpos($html, '<') === false) {
-            $this->createdDOMDocumentFromPainText = true;
+            $this->isDOMDocumentCreatedWithoutHtml = true;
+        }
+
+        if (strpos($html, '<html>') === false) {
+            $this->isDOMDocumentCreatedWithoutHtmlWrapper = true;
         }
 
         // set error level
@@ -258,14 +283,21 @@ class HtmlDomParser
     {
         // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
         //          so we try to remove it here again ...
-        if ($this->createdDOMDocumentFromPainText === true) {
+        if ($this->isDOMDocumentCreatedWithoutHtml === true) {
             $content = str_replace(
                 array('<p>', '</p>', '<body>', '</body>', '<html>', '</html>'),
                 '',
                 $content
             );
+        } else if ($this->isDOMDocumentCreatedWithoutHtmlWrapper === true) {
+            $content = str_replace(
+                array('<body>', '</body>', '<html>', '</html>'),
+                '',
+                $content
+            );
         }
 
+        // TODO: prevent DomDocument from urlencode!!!
         return urldecode(trim($content));
     }
 
