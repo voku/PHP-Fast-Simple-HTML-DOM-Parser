@@ -8,7 +8,7 @@ class TwigTest extends PHPUnit_Framework_TestCase
 {
   public function testTwig()
   {
-    $filename = __DIR__ . '/test_template.twig';
+    $filename = __DIR__ . '/fixtures/test_template.twig';
     $html = HtmlDomParser::file_get_html($filename);
     $htmlNormalised = str_replace(array("\r", "\n"), ' ', file_get_contents($filename));
 

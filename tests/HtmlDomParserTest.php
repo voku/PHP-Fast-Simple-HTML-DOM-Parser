@@ -24,9 +24,9 @@ HTML;
     $checkboxArray = array();
     foreach ($html->find('input[type=checkbox]') as $checkbox) {
       if ($checkbox->checked) {
-        $checkboxArray[$checkbox->name] = 'checked';
+        $checkboxArray[(string)$checkbox->name] = 'checked';
       } else {
-        $checkboxArray[$checkbox->name] = 'not checked';
+        $checkboxArray[(string)$checkbox->name] = 'not checked';
       }
     }
 
@@ -48,7 +48,7 @@ HTML;
       $e->outertext = '[INPUT]';
     }
 
-    self::assertEquals('<form name="form1" method="post" action="">[INPUT]中文空白</form>', $html);
+    self::assertEquals('<form name="form1" method="post" action="">[INPUT]中文空白</form>', (string)$html);
   }
 
   public function testInnertext()

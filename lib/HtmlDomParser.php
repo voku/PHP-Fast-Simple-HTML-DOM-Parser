@@ -11,7 +11,7 @@ use RuntimeException;
 /**
  * Class HtmlDomParser
  *
-*@package FastSimpleHTMLDom
+ * @package FastSimpleHTMLDom
  *
  * @property string      outertext Get dom node's outer html
  * @property string      innertext Get dom node's inner html
@@ -27,407 +27,410 @@ use RuntimeException;
  */
 class HtmlDomParser
 {
-    /**
-     * @var DOMDocument
-     */
-    protected $document;
+  /**
+   * @var array
+   */
+  protected static $functionAliases = array(
+      'outertext' => 'html',
+      'innertext' => 'innerHtml',
+      'load'      => 'loadHtml',
+      'load_file' => 'loadHtmlFile',
+  );
+  /**
+   * @var Callable
+   */
+  static protected $callback;
+  /**
+   * @var DOMDocument
+   */
+  protected $document;
+  /**
+   * @var string
+   */
+  protected $encoding = 'UTF-8';
+  /**
+   * @var bool
+   */
+  protected $isDOMDocumentCreatedWithoutHtml = false;
+  /**
+   * @var bool
+   */
+  protected $isDOMDocumentCreatedWithoutHtmlWrapper = false;
 
-    /**
-     * @var string
-     */
-    protected $encoding = 'UTF-8';
+  /**
+   * Constructor
+   *
+   * @param string|SimpleHtmlDom|\DOMNode $element HTML code or SimpleHtmlDom, \DOMNode
+   */
+  public function __construct($element = null)
+  {
+    $this->document = new DOMDocument('1.0', $this->getEncoding());
 
-    /**
-     * @var bool
-     */
-    protected $isDOMDocumentCreatedWithoutHtml = false;
-
-    /**
-     * @var bool
-     */
-    protected $isDOMDocumentCreatedWithoutHtmlWrapper = false;
-
-    /**
-     * @var array
-     */
-    protected static $functionAliases = array(
-        'outertext' => 'html',
-        'innertext' => 'innerHtml',
-        'load'      => 'loadHtml',
-        'load_file' => 'loadHtmlFile',
-    );
-
-    /**
-     * @var Callable
-     */
-    static protected $callback;
-
-    /**
-     * Constructor
-     *
-     * @param string|SimpleHtmlDom $element HTML code or SimpleHtmlDom
-     */
-    public function __construct($element = null)
-    {
-        $this->document = new DOMDocument('1.0', $this->getEncoding());
-
-        if ($element instanceof SimpleHtmlDom) {
-            $element = $element->getNode();
-
-            $domNode = $this->document->importNode($element, true);
-            $this->document->appendChild($domNode);
-
-            return;
-        }
-
-        if ($element !== null) {
-            $this->loadHtml($element);
-        }
+    if ($element instanceof SimpleHtmlDom) {
+      $element = $element->getNode();
     }
 
-    /**
-     * @return bool
-     */
-    public function getIsDOMDocumentCreatedWithoutHtmlWrapper()
-    {
-        return $this->isDOMDocumentCreatedWithoutHtmlWrapper;
+    if ($element instanceof \DOMNode) {
+      $domNode = $this->document->importNode($element, true);
+      $this->document->appendChild($domNode);
+
+      return;
     }
 
-    /**
-     * @return bool
-     */
-    public function getIsDOMDocumentCreatedWithoutHtml()
-    {
-        return $this->isDOMDocumentCreatedWithoutHtml;
+    if ($element !== null) {
+      $this->loadHtml($element);
+    }
+  }
+
+  /**
+   * @param $name
+   * @param $arguments
+   *
+   * @return bool|mixed
+   */
+  public function __call($name, $arguments)
+  {
+    if (isset(self::$functionAliases[$name])) {
+      return call_user_func_array(array($this, self::$functionAliases[$name]), $arguments);
+    }
+    throw new BadMethodCallException('Method does not exist: ' . $name);
+  }
+
+  /**
+   * @param $name
+   * @param $arguments
+   *
+   * @return HtmlDomParser
+   */
+  public static function __callStatic($name, $arguments)
+  {
+    if ($name == 'str_get_html') {
+      $parser = new HtmlDomParser();
+
+      return $parser->loadHtml($arguments[0]);
     }
 
-    /**
-     * Get the encoding to use
-     *
-     * @return string
-     */
-    private function getEncoding()
-    {
-        return $this->encoding;
+    if ($name == 'file_get_html') {
+      $parser = new HtmlDomParser();
+
+      return $parser->loadHtmlFile($arguments[0]);
     }
 
-    /**
-     * create DOMDocument from HTML
-     *
-     * @param string $html
-     *
-     * @return \DOMDocument
-     */
-    private function createDOMDocument($html)
-    {
-        // DOMDocument settings
-        $this->document->preserveWhiteSpace = true;
-        $this->document->recover = false;
-        $this->document->formatOutput = false;
+    throw new BadMethodCallException('Method does not exist');
+  }
 
-        if (strpos($html, '<') === false) {
-            $this->isDOMDocumentCreatedWithoutHtml = true;
-        }
-
-        if (strpos($html, '<html>') === false) {
-            $this->isDOMDocumentCreatedWithoutHtmlWrapper = true;
-        }
-
-        // set error level
-        $internalErrors = libxml_use_internal_errors(true);
-        $disableEntityLoader = libxml_disable_entity_loader(true);
-
-        $sxe = simplexml_load_string($html);
-        if (count(libxml_get_errors()) === 0) {
-            $this->document = dom_import_simplexml($sxe)->ownerDocument;
-        } else {
-            $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
-
-            // remove the "xml-encoding" hack
-            foreach ($this->document->childNodes as $child) {
-                  if ($child->nodeType == XML_PI_NODE) {
-                        $this->document->removeChild($child);
-                  }
-            }
-
-            libxml_clear_errors();
-        }
-
-        // set encoding
-        $this->document->encoding = $this->getEncoding();
-
-        // restore lib-xml settings
-        libxml_use_internal_errors($internalErrors);
-        libxml_disable_entity_loader($disableEntityLoader);
-
-        return $this->document;
+  /**
+   * @param $name
+   *
+   * @return string
+   */
+  public function __get($name)
+  {
+    switch ($name) {
+      case 'outertext':
+        return $this->html();
+      case 'innertext':
+        return $this->innerHtml();
+      case 'plaintext':
+        return $this->text();
     }
 
-    /**
-     * Load HTML from string
-     *
-     * @param string $html
-     *
-     * @return HtmlDomParser
-     *
-     * @throws InvalidArgumentException if argument is not string
-     */
-    public function loadHtml($html)
-    {
-        if (!is_string($html)) {
-            throw new InvalidArgumentException(__METHOD__ . ' expects parameter 1 to be string.');
-        }
+    return null;
+  }
 
-        $this->document = $this->createDOMDocument($html);
+  /**
+   * @param string $selector
+   * @param int    $idx
+   *
+   * @return SimpleHtmlDom|SimpleHtmlDomNode|null
+   */
+  public function __invoke($selector, $idx = null)
+  {
+    return $this->find($selector, $idx);
+  }
 
-        return $this;
+  /**
+   * @return mixed
+   */
+  public function __toString()
+  {
+    return $this->html();
+  }
+
+  /**
+   * does nothing (only for api-compatibility-reasons)
+   *
+   * @return bool
+   */
+  public function clear()
+  {
+    return true;
+  }
+
+  /**
+   * create DOMDocument from HTML
+   *
+   * @param string $html
+   *
+   * @return \DOMDocument
+   */
+  private function createDOMDocument($html)
+  {
+    // DOMDocument settings
+    $this->document->preserveWhiteSpace = true;
+    $this->document->recover = false;
+    $this->document->formatOutput = false;
+
+    if (strpos($html, '<') === false) {
+      $this->isDOMDocumentCreatedWithoutHtml = true;
     }
 
-    /**
-     * Load HTML from file
-     *
-     * @param string $filePath
-     *
-     * @return HtmlDomParser
-     */
-    public function loadHtmlFile($filePath)
-    {
-        if (!is_string($filePath)) {
-            throw new InvalidArgumentException(__METHOD__ . ' expects parameter 1 to be string.');
-        }
-
-        if (!preg_match("/^https?:\/\//i", $filePath) && !file_exists($filePath)) {
-            throw new RuntimeException("File $filePath not found");
-        }
-
-        try {
-            $html = file_get_contents($filePath);
-        } catch (\Exception $e) {
-            throw new RuntimeException("Could not load file $filePath");
-        }
-
-        if ($html === false) {
-            throw new RuntimeException("Could not load file $filePath");
-        }
-
-        $this->loadHtml($html);
-
-        return $this;
+    if (strpos($html, '<html>') === false) {
+      $this->isDOMDocumentCreatedWithoutHtmlWrapper = true;
     }
 
-    /**
-     * @return DOMDocument
-     */
-    public function getDocument()
-    {
-        return $this->document;
+    // set error level
+    $internalErrors = libxml_use_internal_errors(true);
+    $disableEntityLoader = libxml_disable_entity_loader(true);
+
+    $sxe = simplexml_load_string($html);
+    if (count(libxml_get_errors()) === 0) {
+      $this->document = dom_import_simplexml($sxe)->ownerDocument;
+    } else {
+      $this->document->loadHTML('<?xml encoding="' . $this->getEncoding() . '">' . $html);
+
+      // remove the "xml-encoding" hack
+      foreach ($this->document->childNodes as $child) {
+        if ($child->nodeType == XML_PI_NODE) {
+          $this->document->removeChild($child);
+        }
+      }
+
+      libxml_clear_errors();
     }
 
-    /**
-     * Find list of nodes with a CSS selector
-     *
-     * @param string $selector
-     * @param int    $idx
-     *
-     * @return SimpleHtmlDom|SimpleHtmlDom[]
-     */
-    public function find($selector, $idx = null)
-    {
-        $xPathQuery = SelectorConverter::toXPath($selector);
+    // set encoding
+    $this->document->encoding = $this->getEncoding();
 
-        $xPath = new DOMXPath($this->document);
-        $nodesList = $xPath->query($xPathQuery);
-        $elements = new SimpleHtmlDomNode();
+    // restore lib-xml settings
+    libxml_use_internal_errors($internalErrors);
+    libxml_disable_entity_loader($disableEntityLoader);
 
-        foreach ($nodesList as $node) {
-            $elements[] = new SimpleHtmlDom($node);
-        }
+    return $this->document;
+  }
 
-        if (null === $idx) {
-            return $elements;
-        } else {
-            if ($idx < 0) {
-                $idx = count($elements) + $idx;
-            }
-        }
+  /**
+   * Find list of nodes with a CSS selector
+   *
+   * @param string $selector
+   * @param int    $idx
+   *
+   * @return SimpleHtmlDom|SimpleHtmlDom[]
+   */
+  public function find($selector, $idx = null)
+  {
+    $xPathQuery = SelectorConverter::toXPath($selector);
 
-        if (isset($elements[$idx])) {
-            return $elements[$idx];
-        } else {
-            return new SimpleHtmlDomNodeBlank();
-        }
+    $xPath = new DOMXPath($this->document);
+    $nodesList = $xPath->query($xPathQuery);
+    $elements = new SimpleHtmlDomNode();
+
+    foreach ($nodesList as $node) {
+      $elements[] = new SimpleHtmlDom($node);
     }
 
-    /**
-     * Get dom node's outer html
-     *
-     * @return string
-     */
-    public function html()
-    {
-        if ($this::$callback !== null) {
-            call_user_func_array($this::$callback, array($this));
-        }
-
-        $content = $this->document->saveHTML($this->document->documentElement);
-
-        return $this->fixHtmlOutput($content);
+    if (null === $idx) {
+      return $elements;
+    } else {
+      if ($idx < 0) {
+        $idx = count($elements) + $idx;
+      }
     }
+
+    if (isset($elements[$idx])) {
+      return $elements[$idx];
+    } else {
+      return new SimpleHtmlDomNodeBlank();
+    }
+  }
 
   /**
    * @param $content
    *
    * @return mixed
    */
-    protected function fixHtmlOutput($content)
-    {
-        // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
-        //          so we try to remove it here again ...
-        if ($this->isDOMDocumentCreatedWithoutHtml === true) {
-            $content = str_replace(
-                array('<p>', '</p>', '<body>', '</body>', '<html>', '</html>'),
-                '',
-                $content
-            );
-        } else if ($this->isDOMDocumentCreatedWithoutHtmlWrapper === true) {
-            $content = str_replace(
-                array('<body>', '</body>', '<html>', '</html>'),
-                '',
-                $content
-            );
-        }
-
-        // TODO: prevent DomDocument from urlencode!!!
-        return urldecode(trim($content));
+  protected function fixHtmlOutput($content)
+  {
+    // INFO: DOMDocument will encapsulate plaintext into a paragraph tag (<p>),
+    //          so we try to remove it here again ...
+    if ($this->isDOMDocumentCreatedWithoutHtml === true) {
+      $content = str_replace(
+          array('<p>', '</p>', '<body>', '</body>', '<html>', '</html>'),
+          '',
+          $content
+      );
+    } else if ($this->isDOMDocumentCreatedWithoutHtmlWrapper === true) {
+      $content = str_replace(
+          array('<body>', '</body>', '<html>', '</html>'),
+          '',
+          $content
+      );
     }
 
-    /**
-     * Get dom node's inner html
-     *
-     * @return string
-     */
-    public function innerHtml()
-    {
-        $text = '';
+    // TODO: prevent DomDocument from urlencode!!!
+    return urldecode(trim($content));
+  }
 
-        foreach ($this->document->documentElement->childNodes as $node) {
-            $text .= $this->fixHtmlOutput($this->document->saveHTML($node));
-        }
+  /**
+   * @return DOMDocument
+   */
+  public function getDocument()
+  {
+    return $this->document;
+  }
 
-        return $text;
+  /**
+   * Get the encoding to use
+   *
+   * @return string
+   */
+  private function getEncoding()
+  {
+    return $this->encoding;
+  }
+
+  /**
+   * @return bool
+   */
+  public function getIsDOMDocumentCreatedWithoutHtml()
+  {
+    return $this->isDOMDocumentCreatedWithoutHtml;
+  }
+
+  /**
+   * @return bool
+   */
+  public function getIsDOMDocumentCreatedWithoutHtmlWrapper()
+  {
+    return $this->isDOMDocumentCreatedWithoutHtmlWrapper;
+  }
+
+  /**
+   * Get dom node's outer html
+   *
+   * @return string
+   */
+  public function html()
+  {
+    if ($this::$callback !== null) {
+      call_user_func_array($this::$callback, array($this));
+    }
+    
+    $content = $this->document->saveHTML($this->document->documentElement);
+
+    return $this->fixHtmlOutput($content);
+  }
+
+  /**
+   * Get dom node's inner html
+   *
+   * @return string
+   */
+  public function innerHtml()
+  {
+    $text = '';
+
+    foreach ($this->document->documentElement->childNodes as $node) {
+      $text .= $this->fixHtmlOutput($this->document->saveHTML($node));
     }
 
-    /**
-     * Get dom node's plain text
-     *
-     * @return string
-     */
-    public function text()
-    {
-        return $this->document->textContent;
+    return $text;
+  }
+
+  /**
+   * Load HTML from string
+   *
+   * @param string $html
+   *
+   * @return HtmlDomParser
+   *
+   * @throws InvalidArgumentException if argument is not string
+   */
+  public function loadHtml($html)
+  {
+    if (!is_string($html)) {
+      throw new InvalidArgumentException(__METHOD__ . ' expects parameter 1 to be string.');
     }
 
-    /**
-     * Save dom as string
-     *
-     * @param string $filepath
-     *
-     * @return string
-     */
-    public function save($filepath = '')
-    {
-        $string = $this->innerHtml();
-        if ($filepath !== '') {
-            file_put_contents($filepath, $string, LOCK_EX);
-        }
+    $this->document = $this->createDOMDocument($html);
 
-        return $string;
+    return $this;
+  }
+
+  /**
+   * Load HTML from file
+   *
+   * @param string $filePath
+   *
+   * @return HtmlDomParser
+   */
+  public function loadHtmlFile($filePath)
+  {
+    if (!is_string($filePath)) {
+      throw new InvalidArgumentException(__METHOD__ . ' expects parameter 1 to be string.');
     }
 
-    /**
-     * @param $functionName
-     */
-    public function set_callback($functionName)
-    {
-        $this::$callback = $functionName;
+    if (!preg_match("/^https?:\/\//i", $filePath) && !file_exists($filePath)) {
+      throw new RuntimeException("File $filePath not found");
     }
 
-    public function clear()
-    {
+    try {
+      $html = file_get_contents($filePath);
+    } catch (\Exception $e) {
+      throw new RuntimeException("Could not load file $filePath");
     }
 
-    /**
-     * @param $name
-     *
-     * @return string
-     */
-    public function __get($name)
-    {
-        switch ($name) {
-            case 'outertext':
-                return $this->html();
-            case 'innertext':
-                return $this->innerHtml();
-            case 'plaintext':
-                return $this->text();
-        }
-
-        return null;
+    if ($html === false) {
+      throw new RuntimeException("Could not load file $filePath");
     }
 
-    /**
-     * @return mixed
-     */
-    public function __toString()
-    {
-        return $this->html();
+    $this->loadHtml($html);
+
+    return $this;
+  }
+
+  /**
+   * Save dom as string
+   *
+   * @param string $filepath
+   *
+   * @return string
+   */
+  public function save($filepath = '')
+  {
+    $string = $this->innerHtml();
+    if ($filepath !== '') {
+      file_put_contents($filepath, $string, LOCK_EX);
     }
 
-    /**
-     * @param string $selector
-     * @param int    $idx
-     *
-     * @return SimpleHtmlDom|SimpleHtmlDomNode|null
-     */
-    public function __invoke($selector, $idx = null)
-    {
-        return $this->find($selector, $idx);
-    }
+    return $string;
+  }
 
-    /**
-     * @param $name
-     * @param $arguments
-     *
-     * @return bool|mixed
-     */
-    public function __call($name, $arguments)
-    {
-        if (isset(self::$functionAliases[$name])) {
-            return call_user_func_array(array($this, self::$functionAliases[$name]), $arguments);
-        }
-        throw new BadMethodCallException('Method does not exist: ' . $name);
-    }
+  /**
+   * @param $functionName
+   */
+  public function set_callback($functionName)
+  {
+    $this::$callback = $functionName;
+  }
 
-    /**
-     * @param $name
-     * @param $arguments
-     *
-     * @return HtmlDomParser
-     */
-    public static function __callStatic($name, $arguments)
-    {
-        if ($name == 'str_get_html') {
-            $parser = new HtmlDomParser();
-
-            return $parser->loadHtml($arguments[0]);
-        }
-
-        if ($name == 'file_get_html') {
-            $parser = new HtmlDomParser();
-
-            return $parser->loadHtmlFile($arguments[0]);
-        }
-
-        throw new BadMethodCallException('Method does not exist');
-    }
+  /**
+   * Get dom node's plain text
+   *
+   * @return string
+   */
+  public function text()
+  {
+    return $this->document->textContent;
+  }
 }
