@@ -440,27 +440,7 @@ class SimpleHtmlDom implements \IteratorAggregate
 
     if (!empty($newDocument)) {
 
-      if ($newDocument->getIsDOMDocumentCreatedWithoutHtml() === true) {
-
-        // Remove doc-type node.
-        $newDocument->getDocument()->doctype->parentNode->removeChild($newDocument->getDocument()->doctype);
-
-        // Remove html element, preserving child nodes.
-        $html = $newDocument->getDocument()->getElementsByTagName('html')->item(0);
-        $fragment = $newDocument->getDocument()->createDocumentFragment();
-        while ($html->childNodes->length > 0) {
-          $fragment->appendChild($html->childNodes->item(0));
-        }
-        $html->parentNode->replaceChild($fragment, $html);
-
-        // Remove body element, preserving child nodes.
-        $body = $newDocument->getDocument()->getElementsByTagName('body')->item(0);
-        $fragment = $newDocument->getDocument()->createDocumentFragment();
-        while ($body->childNodes->length > 0) {
-          $fragment->appendChild($body->childNodes->item(0));
-        }
-        $body->parentNode->replaceChild($fragment, $body);
-      }
+      $newDocument = $this->cleanHtmlWrapper($newDocument);
 
       $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
 
@@ -491,6 +471,23 @@ class SimpleHtmlDom implements \IteratorAggregate
       throw new RuntimeException("Not valid HTML fragment");
     }
 
+    $newDocument = $this->cleanHtmlWrapper($newDocument);
+
+    $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
+
+    $this->node->parentNode->replaceChild($newNode, $this->node);
+    $this->node = $newNode;
+
+    return $this;
+  }
+
+  /**
+   * @param HtmlDomParser $newDocument
+   *
+   * @return HtmlDomParser
+   */
+  protected function cleanHtmlWrapper(HtmlDomParser $newDocument)
+  {
     if ($newDocument->getIsDOMDocumentCreatedWithoutHtml() === true) {
 
       // Remove doc-type node.
@@ -511,14 +508,35 @@ class SimpleHtmlDom implements \IteratorAggregate
         $fragment->appendChild($body->childNodes->item(0));
       }
       $body->parentNode->replaceChild($fragment, $body);
+
+      // At this point DOMDocument still added a "<p>"-wrapper around our string,
+      // so we replace it with "<simpleHtmlDomP>" and delete this at the ending ...
+      $this->changeElementName($newDocument->getDocument()->getElementsByTagName('p')->item(0), 'simpleHtmlDomP');
     }
 
-    $newNode = $this->node->ownerDocument->importNode($newDocument->getDocument()->documentElement, true);
+    return $newDocument;
+  }
 
-    $this->node->parentNode->replaceChild($newNode, $this->node);
-    $this->node = $newNode;
+  /**
+   * change the name of a tag in a "DOMNode"
+   *
+   * @param DOMNode $node
+   * @param string  $name
+   *
+   * @return DOMElement
+   */
+  protected function changeElementName(\DOMNode $node, $name) {
+    $newnode = $node->ownerDocument->createElement($name);
+    foreach ($node->childNodes as $child){
+      $child = $node->ownerDocument->importNode($child, true);
+      $newnode->appendChild($child);
+    }
+    foreach ($node->attributes as $attrName => $attrNode) {
+      $newnode->setAttribute($attrName, $attrNode);
+    }
+    $newnode->ownerDocument->replaceChild($newnode, $node);
 
-    return $this;
+    return $newnode;
   }
 
   /**

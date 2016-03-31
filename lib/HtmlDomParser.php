@@ -265,13 +265,24 @@ class HtmlDomParser
     //          so we try to remove it here again ...
     if ($this->isDOMDocumentCreatedWithoutHtml === true) {
       $content = str_replace(
-          array('<p>', '</p>', '<body>', '</body>', '<html>', '</html>'),
+          array(
+              "\n",
+              '<p>', '</p>',
+              "\n" . '<simpleHtmlDomP>', '<simpleHtmlDomP>', '</simpleHtmlDomP>',
+              '<body>', '</body>',
+              '<html>', '</html>'
+          ),
           '',
           $content
       );
     } else if ($this->isDOMDocumentCreatedWithoutHtmlWrapper === true) {
       $content = str_replace(
-          array('<body>', '</body>', '<html>', '</html>'),
+          array(
+              "\n",
+              "\n" . '<simpleHtmlDomP>', '<simpleHtmlDomP>', '</simpleHtmlDomP>',
+              '<body>', '</body>',
+              '<html>', '</html>'
+          ),
           '',
           $content
       );
@@ -325,7 +336,7 @@ class HtmlDomParser
     if ($this::$callback !== null) {
       call_user_func_array($this::$callback, array($this));
     }
-    
+
     $content = $this->document->saveHTML($this->document->documentElement);
 
     return $this->fixHtmlOutput($content);
