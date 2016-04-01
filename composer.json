@@ -1,31 +1,36 @@
 {
-    "name": "dimabdc/php-fast-simple-html-dom-parser",
-    "description": "PHP Fast Simple HTML DOM parser.",
-    "type": "library",
-    "keywords": ["html","parse","parser"],
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "dimabdc",
-            "email": "support@titor.ru",
-            "homepage": "http://github.com/dimabdc"
-        }
-    ],
-	"require":{
-        "php":">=5.3",
-        "symfony/css-selector": "2.8.*"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "~4.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "FastSimpleHTMLDom\\": "lib/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "tests\\": "tests/"
-        }
+  "name": "dimabdc/php-fast-simple-html-dom-parser",
+  "description": "PHP Fast Simple HTML DOM parser.",
+  "type": "library",
+  "keywords": [
+    "html",
+    "parse",
+    "parser"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "dimabdc",
+      "email": "support@titor.ru",
+      "homepage": "http://github.com/dimabdc"
     }
+  ],
+  "require": {
+    "php": ">=5.3",
+    "symfony/css-selector": "~2.8.0",
+    "voku/portable-utf8": "~2.1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~4.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "FastSimpleHTMLDom\\": "lib/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "tests\\": "tests/"
+    }
+  }
 }

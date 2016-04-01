@@ -62,17 +62,18 @@ HTML;
     $html->find('div', 1)->class = 'bar';
     $html->find('div[id=hello]', 0)->innertext = 'foo';
 
-    self::assertEquals('<div id="hello">foo</div>' . "\n" . '<div id="world" class="bar">World</div>', (string)$html);
+    self::assertEquals('<div id="hello">foo</div><div id="world" class="bar">World</div>', (string)$html);
   }
 
   public function testMail2()
   {
     $filename = __DIR__ . '/fixtures/test_mail.html';
+    $filenameExpected = __DIR__ . '/fixtures/test_mail_expected.html';
     $html = HtmlDomParser::file_get_html($filename);
-    $htmlNormalised = str_replace(array("\r", "\n"), ' ', file_get_contents($filename));
+    $htmlExpected = str_replace(array("\r\n", "\r", "\n"), ' ', file_get_contents($filenameExpected));
 
     // object to sting
-    self::assertEquals($htmlNormalised, (string)$html);
+    self::assertEquals($htmlExpected, str_replace(array("\r\n", "\r", "\n"), ' ', (string)$html));
 
     $preHeaderContentArray = $html->find('.preheaderContent');
 
@@ -268,11 +269,15 @@ HTML;
     }
 
     $testString = false;
+    $tmpCounter = 0;
     foreach ($htmlTmp->find('table tr td img') as $e) {
       if ($e->alt == '○●◎ earth 中文空白') {
         $testString = $e->alt;
+        break;
       }
+      $tmpCounter++;
     }
+    self::assertEquals(15, $tmpCounter);
     self::assertEquals('○●◎ earth 中文空白', $testString);
 
     // get the content from the css-selector
@@ -307,7 +312,7 @@ HTML;
     $testStringUtf8_v8 = $htmlTmp->getElementByTagName('foo');
     self::assertEquals('bar', $testStringUtf8_v8->innertext);
 
-    $testStringUtf8_v9 = $htmlTmp->getElementsByTagName('img');
+    $testStringUtf8_v9 = $htmlTmp->getElementsByTagName('img', 15);
     self::assertEquals('○●◎ earth 中文空白', $testStringUtf8_v9->alt);
     self::assertEquals('', $testStringUtf8_v9->innertext);
     self::assertEquals('<img src="foobar" alt="○●◎ earth 中文空白" width="5" height="20" border="0">', $testStringUtf8_v9->outertext);

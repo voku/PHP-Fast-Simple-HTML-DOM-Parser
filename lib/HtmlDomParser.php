@@ -36,22 +36,27 @@ class HtmlDomParser
       'load'      => 'loadHtml',
       'load_file' => 'loadHtmlFile',
   );
+
   /**
    * @var Callable
    */
   static protected $callback;
+
   /**
    * @var DOMDocument
    */
   protected $document;
+
   /**
    * @var string
    */
   protected $encoding = 'UTF-8';
+
   /**
    * @var bool
    */
   protected $isDOMDocumentCreatedWithoutHtml = false;
+
   /**
    * @var bool
    */
@@ -72,7 +77,10 @@ class HtmlDomParser
 
     if ($element instanceof \DOMNode) {
       $domNode = $this->document->importNode($element, true);
-      $this->document->appendChild($domNode);
+
+      if ($domNode instanceof \DOMNode) {
+        $this->document->appendChild($domNode);
+      }
 
       return;
     }
@@ -93,6 +101,7 @@ class HtmlDomParser
     if (isset(self::$functionAliases[$name])) {
       return call_user_func_array(array($this, self::$functionAliases[$name]), $arguments);
     }
+
     throw new BadMethodCallException('Method does not exist: ' . $name);
   }
 
@@ -176,16 +185,11 @@ class HtmlDomParser
    */
   private function createDOMDocument($html)
   {
-    // DOMDocument settings
-    $this->document->preserveWhiteSpace = true;
-    $this->document->recover = false;
-    $this->document->formatOutput = false;
-
     if (strpos($html, '<') === false) {
       $this->isDOMDocumentCreatedWithoutHtml = true;
     }
 
-    if (strpos($html, '<html>') === false) {
+    if (strpos($html, '<html') === false) {
       $this->isDOMDocumentCreatedWithoutHtmlWrapper = true;
     }
 
@@ -220,7 +224,69 @@ class HtmlDomParser
   }
 
   /**
-   * Find list of nodes with a CSS selector
+   * Callback function for preg_replace_callback use.
+   *
+   * @param  array $matches PREG matches
+   *
+   * @return string
+   */
+  protected function entityCallback(&$matches)
+  {
+    return mb_convert_encoding($matches[0], 'UTF-8', 'HTML-ENTITIES');
+  }
+
+  /**
+   * Return SimpleHtmlDom by id.
+   *
+   * @param string $id
+   *
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
+   */
+  public function getElementById($id)
+  {
+    return $this->find("#$id", 0);
+  }
+
+  /**
+   * Return SimpleHtmlDom by tag name.
+   *
+   * @param string $name
+   *
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
+   */
+  public function getElementByTagName($name)
+  {
+    return $this->find($name, 0);
+  }
+
+  /**
+   * Returns Elements by id
+   *
+   * @param string   $id
+   * @param null|int $idx
+   *
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
+   */
+  public function getElementsById($id, $idx = null)
+  {
+    return $this->find("#$id", $idx);
+  }
+
+  /**
+   * Returns Elements by tag name
+   *
+   * @param string   $name
+   * @param null|int $idx
+   *
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
+   */
+  public function getElementsByTagName($name, $idx = null)
+  {
+    return $this->find($name, $idx);
+  }
+
+  /**
+   * Find list of nodes with a CSS selector.
    *
    * @param string $selector
    * @param int    $idx
@@ -275,6 +341,7 @@ class HtmlDomParser
           '',
           $content
       );
+
     } else if ($this->isDOMDocumentCreatedWithoutHtmlWrapper === true) {
       $content = str_replace(
           array(
@@ -288,7 +355,9 @@ class HtmlDomParser
       );
     }
 
-    // TODO: prevent DomDocument from urlencode!!!
+    // replace html entities which represent UTF-8 codepoints.
+    $content = preg_replace_callback("/&#\d{2,5};/", array($this, 'entityCallback'), $content);
+
     return urldecode(trim($content));
   }
 
@@ -337,7 +406,11 @@ class HtmlDomParser
       call_user_func_array($this::$callback, array($this));
     }
 
-    $content = $this->document->saveHTML($this->document->documentElement);
+    if ($this->getIsDOMDocumentCreatedWithoutHtmlWrapper()) {
+      $content = $this->document->saveHTML($this->document->documentElement);
+    } else {
+      $content = $this->document->saveHTML();
+    }
 
     return $this->fixHtmlOutput($content);
   }

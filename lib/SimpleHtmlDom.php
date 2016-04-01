@@ -234,7 +234,7 @@ class SimpleHtmlDom implements \IteratorAggregate
    *
    * @param string $name
    *
-   * @return string|null
+   * @return string
    */
   public function getAttribute($name)
   {
@@ -242,11 +242,11 @@ class SimpleHtmlDom implements \IteratorAggregate
   }
 
   /**
-   * Return SimpleHtmlDom by id
+   * Return SimpleHtmlDom by id.
    *
-   * @param $id
+   * @param string $id
    *
-   * @return SimpleHtmlDom|null
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
    */
   public function getElementById($id)
   {
@@ -254,11 +254,11 @@ class SimpleHtmlDom implements \IteratorAggregate
   }
 
   /**
-   * Return SimpleHtmlDom by tag name
+   * Return SimpleHtmlDom by tag name.
    *
-   * @param $name
+   * @param string $name
    *
-   * @return SimpleHtmlDom|null
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
    */
   public function getElementByTagName($name)
   {
@@ -268,10 +268,10 @@ class SimpleHtmlDom implements \IteratorAggregate
   /**
    * Returns Elements by id
    *
-   * @param      $id
-   * @param null $idx
+   * @param string   $id
+   * @param null|int $idx
    *
-   * @return SimpleHtmlDom|SimpleHtmlDomNode|null
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
    */
   public function getElementsById($id, $idx = null)
   {
@@ -281,10 +281,10 @@ class SimpleHtmlDom implements \IteratorAggregate
   /**
    * Returns Elements by tag name
    *
-   * @param      $name
-   * @param null $idx
+   * @param string   $name
+   * @param null|int $idx
    *
-   * @return SimpleHtmlDom|SimpleHtmlDomNode|null
+   * @return SimpleHtmlDomNode|SimpleHtmlDomNode[]|SimpleHtmlDomNodeBlank
    */
   public function getElementsByTagName($name, $idx = null)
   {
@@ -292,6 +292,8 @@ class SimpleHtmlDom implements \IteratorAggregate
   }
 
   /**
+   * Create a new "HtmlDomParser"-object from the current context.
+   *
    * @return HtmlDomParser
    */
   public function getHtmlDomParser()
@@ -305,7 +307,6 @@ class SimpleHtmlDom implements \IteratorAggregate
    * @link  http://php.net/manual/en/iteratoraggregate.getiterator.php
    * @return SimpleHtmlDomNode An instance of an object implementing <b>Iterator</b> or
    * <b>Traversable</b>
-   * @since 5.0.0
    */
   public function getIterator()
   {
